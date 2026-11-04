@@ -1,0 +1,15 @@
+{
+  "name": "messagerie-simple",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Exercice de messagerie avec Express, MySQL et Fetch",
+  "scripts": {
+    "start": "node app.js",
+    "test": "node tests/api.cjs"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "mysql": "^2.18.1",
+    "dotenv": "^16.4.7"
+  }
+}

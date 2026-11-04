@@ -1,0 +1,260 @@
+/* Présentation uniquement : les identifiants et le comportement JS sont conservés. */
+:root {
+    color-scheme: light;
+    --fond: #f5f6f8;
+    --surface: #fff;
+    --texte: #202b3c;
+    --secondaire: #586579;
+    --bordure: #e1e6ed;
+    --accent: #245aca;
+    --accent-doux: #edf3ff;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { height: 100%; }
+body {
+    margin: 0;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    background: var(--fond);
+    color: var(--texte);
+    font: 14px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    -webkit-text-size-adjust: 100%;
+}
+.app {
+    width: 100%;
+    max-width: 1600px;
+    height: 100%;
+    margin-inline: auto;
+    padding: 0 clamp(12px, 2.4vw, 36px);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+}
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex: none;
+    padding-top: max(16px, env(safe-area-inset-top));
+}
+h1 { margin: 0; font-size: clamp(21px, 2.3vw, 28px); font-weight: 650; letter-spacing: -.035em; }
+h2 { margin: 0 0 16px; font-size: 16px; font-weight: 650; letter-spacing: -.015em; }
+p { margin: 8px 0; }
+p:empty { display: none; }
+.sous-titre, small { color: var(--secondaire); }
+small { font-size: 12px; }
+.profil { display: flex; align-items: center; gap: 10px; min-width: 0; }
+header .profil label { margin: 0; font-size: 12px; }
+header .profil select { width: clamp(140px, 18vw, 230px); }
+nav {
+    display: flex;
+    gap: 6px;
+    flex: none;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--bordure);
+}
+button {
+    min-height: 36px;
+    padding: 8px 12px;
+    border: 1px solid var(--bordure);
+    border-radius: 7px;
+    font: inherit;
+    font-weight: 550;
+    line-height: 1.3;
+    color: var(--texte);
+    background: var(--surface);
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: background-color 150ms ease, border-color 150ms ease, transform 120ms ease-out;
+}
+nav button { border-color: transparent; background: transparent; padding-inline: 18px; }
+nav button.actif { background: var(--accent-doux); color: var(--accent); }
+button.actif, button.principal { background: var(--accent); border-color: transparent; color: #fff; }
+button:active:not(:disabled) { transform: scale(.98); }
+button:disabled { opacity: .55; cursor: wait; }
+:where(button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+@media (hover: hover) and (pointer: fine) {
+    button:hover:not(:disabled) { background: #f0f3f8; border-color: #c4cedb; }
+    button.principal:hover:not(:disabled), .sous-onglets button.actif:hover:not(:disabled) { background: #1b49ac; }
+    nav button:hover:not(:disabled), nav button.actif:hover:not(:disabled) { background: var(--accent-doux); }
+    tbody tr:hover { background: #f7f9fd; }
+}
+/* Le contenu central seul reçoit l'espace restant : le footer ne le recouvre pas. */
+.app > section { flex: 1; min-height: 0; }
+.grille {
+    display: grid;
+    grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 16px;
+}
+.carte {
+    min-width: 0;
+    min-height: 0;
+    padding: 20px;
+    border: 1px solid var(--bordure);
+    border-radius: 12px;
+    background: var(--surface);
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: #bbc5d3 transparent;
+}
+label { display: block; font-size: 12px; font-weight: 600; margin: 12px 0 5px; }
+input, select, textarea {
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding: 8px 10px;
+    border: 1px solid #cdd5df;
+    border-radius: 7px;
+    font: inherit;
+    color: inherit;
+    background: var(--surface);
+}
+select { cursor: pointer; padding-right: 8px; }
+textarea { min-height: 100px; resize: vertical; line-height: 1.5; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.actions button { font-size: 12px; }
+#formMessage .actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+#formContact .actions, #formDossier .actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.ligne { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ligne select { flex: 1; min-width: 0; }
+.ligne strong { overflow-wrap: anywhere; }
+/* Les listes défilent, sans agrandir la page ni déplacer leur en-tête. */
+.liste-carte { display: flex; flex-direction: column; overflow: hidden; }
+.liste-carte > :not(.table-conteneur) { flex-shrink: 0; }
+.liste-carte h2 { margin-bottom: 4px; }
+.table-conteneur {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    margin-top: 16px;
+    border-block: 1px solid var(--bordure);
+}
+table { width: 100%; min-width: 440px; border-collapse: separate; border-spacing: 0; table-layout: fixed; text-align: left; font-size: 12px; }
+th, td { padding: 10px 8px; border-bottom: 1px solid #edf0f4; }
+th { position: sticky; top: 0; z-index: 1; background: #f7f8fa; color: var(--secondaire); font-size: 11px; font-weight: 600; }
+th:nth-child(1) { width: 23%; }
+th:nth-child(2) { width: 26%; }
+th:nth-child(3) { width: 23%; }
+th:nth-child(4) { width: 14%; }
+th:nth-child(5) { width: 14%; }
+td { height: 54px; }
+td button { padding: 6px 8px; min-height: 32px; font-size: 11px; }
+.texte-cellule { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.non-lu { font-weight: 650; }
+#nombreAffiche { display: block; margin-top: 10px; }
+/* Lecture et rédaction se partagent le même espace, sans toucher au JavaScript. */
+.panneau-message { display: flex; flex-direction: column; overflow: hidden; }
+.sous-onglets { display: flex; flex: none; gap: 4px; padding: 4px; background: #f2f4f7; border-radius: 8px; margin-bottom: 16px; }
+.sous-onglets button { flex: 1; border-color: transparent; background: transparent; font-size: 12px; }
+.sous-onglets button.actif { background: var(--accent); }
+#panneauLecture, #panneauRedaction { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+#panneauLecture { display: flex; flex-direction: column; }
+#lecture { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+#lectureObjet { overflow-wrap: anywhere; flex-shrink: 0; margin-bottom: 4px; }
+#lectureInfos { font-size: 12px; overflow-wrap: anywhere; }
+#lectureContenu {
+    flex: 1 1 auto;
+    min-height: 64px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.75;
+    padding: 12px 8px 12px 0;
+}
+#lecture .actions, #zoneDeplacement { flex-shrink: 0; }
+.vide { margin: auto; padding: 24px 12px; max-width: 300px; color: var(--secondaire); text-align: center; font-size: 13px; text-wrap: balance; }
+#panneauRedaction { display: flex; flex-direction: column; }
+#titreRedaction { margin-bottom: 2px; }
+#formMessage { display: flex; flex-direction: column; flex: 1; min-height: min-content; }
+#formMessage textarea { flex: 1; resize: none; min-height: 88px; }
+/* Des étiquettes alignées rendent les formulaires plus compacts. */
+#formContact, #formProfil { display: grid; grid-template-columns: minmax(100px, .7fr) minmax(0, 1.3fr); align-items: center; gap: 10px 16px; }
+#formContact label, #formProfil label { margin: 0; }
+#formContact small { grid-column: 2; margin-top: -6px; }
+#formContact .actions, #formProfil button { grid-column: 1 / -1; }
+#formContact .actions { margin-top: 8px; }
+#formProfil button { justify-self: end; margin-top: 8px; }
+#formDossier label:first-child { margin-top: 0; }
+#zoneDossiers .sous-titre { margin-top: 16px; font-size: 12px; }
+.contact, .dossier { padding: 16px 0; border-bottom: 1px solid var(--bordure); overflow-wrap: anywhere; }
+.contact:first-child, .dossier:first-child { padding-top: 0; }
+.contact:last-child, .dossier:last-child { border-bottom: 0; }
+.contact { display: flex; align-items: flex-start; gap: 12px; }
+.contact img { width: 38px; height: 38px; object-fit: cover; border-radius: 50%; flex: none; }
+.contact-texte { flex: 1; min-width: 0; }
+.contact p, .dossier p { font-size: 12px; color: var(--secondaire); margin: 4px 0; }
+.contact .actions, .dossier .actions { margin-top: 10px; }
+.etiquette { color: var(--accent); font-size: 12px; }
+.compteur { flex-shrink: 0; background: #f0f3f8; color: var(--secondaire); padding: 2px 9px; border-radius: 20px; font-size: 12px; font-variant-numeric: tabular-nums; }
+.profil-carte { width: min(100%, 720px); align-self: center; }
+#erreur, #confirmation { flex: none; margin: 0; padding: 10px 14px; border: 1px solid; border-radius: 8px; font-size: 13px; max-height: 18dvh; overflow: auto; overflow-wrap: anywhere; }
+#erreur { background: #fff3f2; color: #982b27; border-color: #f4d4d1; }
+#confirmation { background: #eef8f2; color: #246544; border-color: #cce7d7; }
+footer {
+    flex: none;
+    margin: 0;
+    border-top: 1px solid var(--bordure);
+    padding: 10px 0 max(10px, env(safe-area-inset-bottom));
+    text-align: center;
+    font-size: 11px;
+    color: var(--secondaire);
+    text-wrap: balance;
+}
+@media (max-width: 1000px) {
+    .carte { padding: 16px; }
+    .grille { gap: 12px; }
+    #formContact { grid-template-columns: 110px minmax(0, 1fr); gap: 8px 10px; }
+}
+@media (max-width: 640px) {
+    .app { gap: 10px; }
+    header { gap: 8px; padding-top: max(12px, env(safe-area-inset-top)); }
+    header .profil { gap: 6px; }
+    header .profil label { font-size: 11px; }
+    header .profil select { width: 145px; }
+    nav { gap: 2px; padding-bottom: 8px; }
+    nav button { flex: 1; padding: 8px 4px; font-size: 12px; min-height: 40px; }
+    .grille { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, .9fr) minmax(0, 1.1fr); gap: 10px; }
+    .carte { padding: 12px; border-radius: 10px; }
+    h2 { font-size: 14px; margin-bottom: 12px; }
+    input, select, textarea { font-size: 16px; }
+    #utilisateur, #filtreDossier { padding-block: 6px; }
+    .liste-carte label { margin-top: 6px; }
+    .table-conteneur { margin-top: 10px; }
+    .sous-onglets { margin-bottom: 10px; }
+    .sous-onglets button, .actions button { min-height: 40px; }
+    #formContact, #formProfil { grid-template-columns: 100px minmax(0, 1fr); gap: 8px 10px; }
+    footer { font-size: 10px; padding-top: 8px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+}
+@media (max-width: 360px) {
+    header .profil label { max-width: 66px; }
+    header .profil select { width: 125px; }
+    .app { padding-inline: 8px; }
+}
+@media (max-height: 600px) {
+    .app { gap: 8px; }
+    header { padding-top: max(8px, env(safe-area-inset-top)); }
+    h1 { font-size: 21px; }
+    nav { padding-bottom: 6px; }
+    .carte { padding: 12px; }
+    footer { padding-block: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    button { transition: none; }
+    button:active:not(:disabled) { transform: none; }
+}
+/* Sur un téléphone court, réserver assez de place pour une ligne et ses actions. */
+@media (max-width: 640px) and (max-height: 650px) {
+    .grille { grid-template-rows: minmax(0, 1.15fr) minmax(0, 1fr); }
+    .table-conteneur { scroll-padding-top: 34px; }
+}

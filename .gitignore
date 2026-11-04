@@ -1,0 +1,6 @@
+# Dépendances et configuration locale
+node_modules/
+.env
+.env.*
+!.env.example
+*.zip

@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Messagerie — Exercice 1</title>
+        <link rel="stylesheet" href="/style.css">
+    </head>
+    <body>
+        <main class="app">
+            <!-- En-tête et choix de l’utilisateur dont on affiche les données. -->
+            <header>
+                <div>
+                    <h1>Messagerie</h1>
+                    <p class="sous-titre"></p>
+                </div>
+                <div class="profil">
+                    <label for="utilisateur">Utilisateur : </label>
+                    <select id="utilisateur" onchange="changerUtilisateur()"></select>
+                </div>
+            </header>
+
+            <!-- Les boutons changent la section visible sans recharger la page. -->
+            <nav aria-label="Navigation principale">
+                <button id="boutonMessages" class="actif" onclick="afficherOnglet('Messages')">Messages</button>
+                <button id="boutonContacts" onclick="afficherOnglet('Contacts')">Contacts</button>
+                <button id="boutonDossiers" onclick="afficherOnglet('Dossiers')">Dossiers</button>
+                <button id="boutonProfil" onclick="afficherOnglet('Profil')">Mon profil</button>
+            </nav>
+
+            <!-- Ces deux zones sont remplies en JavaScript après une opération. -->
+            <p id="erreur" role="alert" hidden></p>
+            <p id="confirmation" role="status" hidden></p>
+
+            <!-- Messages : liste à gauche, lecture ou rédaction à droite. -->
+            <section id="zoneMessages" class="grille">
+                <div class="carte liste-carte">
+                    <h2>Mes messages</h2>
+                    <label for="filtreDossier">Dossier</label>
+                    <select id="filtreDossier" onchange="changerDossier()"></select>
+                    <!-- Au-delà de 8 messages, seule cette zone défile. -->
+                    <div class="table-conteneur" id="defilementMessages" tabindex="0" aria-label="Liste des messages">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Contact</th>
+                                    <th>Objet</th>
+                                    <th>Date</th>
+                                    <th>État</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <!-- Les lignes des messages sont ajoutées par chargerMessages(). -->
+                            <tbody id="listeMessages"></tbody>
+                        </table>
+                    </div>
+                    <p id="aucunMessage" hidden>Aucun message dans ce dossier.</p>
+                    <small id="nombreAffiche"></small>
+                </div>
+                <div class="carte panneau-message">
+                    <!-- Le panneau de droite contient la lecture et le formulaire de rédaction. -->
+                    <div class="sous-onglets" role="group" aria-label="Panneau message">
+                        <button id="boutonLecture" class="actif" onclick="afficherPanneau('Lecture')">Consulter</button>
+                        <button id="boutonRedaction" onclick="afficherPanneau('Redaction')">Nouveau message</button>
+                    </div>
+                    <div id="panneauLecture">
+                        <p id="lectureVide" class="vide">Sélectionnez un message dans la liste à gauche.</p>
+                        <article id="lecture" hidden>
+                            <h2 id="lectureObjet"></h2>
+                            <p id="lectureInfos" class="sous-titre"></p>
+                            <!-- Un long message défile dans cette zone. -->
+                            <div id="lectureContenu" tabindex="0" aria-label="Contenu du message"></div>
+                            <div id="actionsMessage" class="actions"></div>
+                            <div id="zoneDeplacement" hidden>
+                                <label for="dossierDestination">Déplacer vers</label>
+                                <div class="ligne">
+                                    <select id="dossierDestination"></select>
+                                    <button onclick="deplacerMessage()">Déplacer</button>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                    <!-- Le formulaire sert aussi à reprendre et à modifier un brouillon. -->
+                    <div id="panneauRedaction" hidden>
+                        <h2 id="titreRedaction">Nouveau message</h2>
+                        <form id="formMessage" onsubmit="enregistrerMessage(event, 'envoyer')">
+                            <label for="destinataire">Destinataire</label>
+                            <select id="destinataire">
+                                <option value="">Sélectionner un utilisateur</option>
+                            </select>
+                            <label for="objet">Objet</label>
+                            <input id="objet" maxlength="150">
+                            <label for="contenu">Contenu</label>
+                            <textarea id="contenu" placeholder="Écrivez votre message ici…"></textarea>
+                            <div class="actions">
+                                <button class="principal" type="submit">Envoyer</button>
+                                <button type="button" onclick="enregistrerMessage(event, 'brouillon')">Brouillon</button>
+                                <button type="button" onclick="nouveauMessage()">Vider</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Contacts : carnet et formulaire d’ajout ou de modification. -->
+            <section id="zoneContacts" class="grille" hidden>
+                <div class="carte">
+                    <h2>Mes contacts</h2>
+                    <div id="listeContacts"></div>
+                </div>
+                <div class="carte">
+                    <h2 id="titreContact">Ajouter un contact</h2>
+                    <form id="formContact" onsubmit="enregistrerContact(event)">
+                        <label for="nom">Nom</label>
+                        <input id="nom" maxlength="50" required>
+                        <label for="prenom">Prénom</label>
+                        <input id="prenom" maxlength="50" required>
+                        <label for="courriel">Adresse courriel</label>
+                        <input id="courriel" type="email" maxlength="100" required>
+                        <label for="photo">Photo de profil (nom du fichier)</label>
+                        <input id="photo" placeholder="ali.svg" maxlength="255">
+                        <small>Placer la photo dans images.</small>
+                        <label for="telephone">Téléphone (10 chiffres)</label>
+                        <input id="telephone" type="tel" pattern="[0-9]{10}" maxlength="10" required>
+                        <label for="typeTelephone">Type</label>
+                        <select id="typeTelephone">
+                            <option value="mobile">Mobile</option>
+                            <option value="fixe">Fixe</option>
+                            <option value="professionnel">Professionnel</option>
+                        </select>
+                        <div class="actions">
+                            <button class="principal" type="submit">Enregistrer</button>
+                            <button type="button" onclick="viderContact()">Annuler</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Dossiers : liste des dossiers et gestion des dossiers personnels. -->
+            <section id="zoneDossiers" class="grille" hidden>
+                <div class="carte">
+                    <h2>Mes dossiers</h2>
+                    <div id="listeDossiers"></div>
+                </div>
+                <div class="carte">
+                    <h2 id="titreDossier">Créer un dossier</h2>
+                    <form id="formDossier" onsubmit="enregistrerDossier(event)">
+                        <label for="nomDossier">Nom*</label>
+                        <input id="nomDossier" maxlength="50" required>
+                        <label for="commentaire">Commentaire</label>
+                        <textarea id="commentaire"></textarea>
+                        <div class="actions">
+                            <button class="principal" type="submit">Enregistrer</button>
+                            <button type="button" onclick="viderDossier()">Annuler</button>
+                        </div>
+                    </form>
+                    <p class="sous-titre">Les dossiers système sont protégés. Un dossier personnel doit être vide avant sa suppression.</p>
+                </div>
+            </section>
+
+            <!-- Profil : informations de l’utilisateur choisi dans l’en-tête. -->
+            <section id="zoneProfil" class="carte profil-carte" hidden>
+                <h2>Mon profil</h2>
+                <form id="formProfil" onsubmit="enregistrerProfil(event)">
+                    <label for="profilNom">Nom</label>
+                    <input id="profilNom" maxlength="50" required>
+                    <label for="profilPrenom">Prénom</label>
+                    <input id="profilPrenom" maxlength="50" required>
+                    <label for="profilCourriel">Adresse courriel</label>
+                    <input id="profilCourriel" type="email" maxlength="100" required>
+                    <label for="profilPhoto">Photo (nom du fichier)</label>
+                    <input id="profilPhoto" maxlength="255">
+                    <button class="principal" type="submit">Enregistrer le profil</button>
+                </form>
+            </section>
+            <footer>Front-End : Mohsen - Javascript : Nasreddine - Api : Mohsen & Nasreddine</footer>
+        </main>
+
+        <script>
+
+            // 1. Données utilisées par l’interface
+            // Les listes sont rechargées selon l’utilisateur sélectionné.
+            let utilisateur = 1;
+            let utilisateurs = [];
+            let dossiers = [];
+            let messages = [];
+            // null signifie qu’aucun message, brouillon, contact ou dossier n’est sélectionné.
+            let messageSelectionne = null;
+            let brouillonId = null;
+            let contactId = null;
+            let dossierId = null;
+            let ongletActuel = "Messages";
+            let revisionUtilisateur = 0; // Ignorer une ancienne réponse après un changement d'utilisateur.
+            let occupe = false; // Éviter deux modifications simultanées depuis l'interface.
+
+            // 2. Fonctions communes : API, alertes et navigation
+            // Ajouter l’utilisateur sélectionné à chaque requête envoyée au serveur.
+            async function appelerAPI(route, options = {}) {
+                const separateur = route.includes("?") ? "&" : "?";
+                const response = await fetch("/api" + route + separateur + "utilisateur=" + utilisateur, options);
+                // Un message compréhensible si la page est ouverte avec un mauvais serveur.
+                const type = response.headers.get("content-type") || "";
+                if (!type.includes("application/json")) throw new Error("Ouvrir http://localhost:3000 après npm start.");
+                const resultat = await response.json();
+                if (!response.ok) throw new Error(resultat.error || "Une erreur est survenue.");
+                return resultat;
+            }
+
+            // Préparer les données au format JSON pour les requêtes POST, PUT et PATCH.
+            function json(method, body) {
+                return {
+                    method: method,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body)
+                };
+            }
+
+            // Afficher le message renvoyé par le serveur dans la zone d'erreur.
+            function afficherErreur(error) {
+                document.getElementById("erreur").textContent = error.message;
+                document.getElementById("erreur").hidden = false;
+            }
+
+            // Masquer les alertes de l'interface, sans supprimer les messages de la boîte.
+            function effacerMessages() {
+                document.getElementById("erreur").hidden = true;
+                document.getElementById("confirmation").hidden = true;
+            }
+
+            // Pendant une modification, empêcher les doubles clics et le changement de boîte.
+            async function modifierDonnees(travail) {
+                if (occupe) return;
+                occupe = true;
+                const controles = Array.from(document.querySelectorAll("button, select"));
+                // Mémoriser les boutons déjà désactivés pour retrouver leur état à la fin.
+                const etats = controles.map(element => element.disabled);
+                controles.forEach(element => element.disabled = true);
+                effacerMessages();
+                try {
+                    const resultat = await travail();
+                    if (resultat && resultat.message) {
+                        document.getElementById("confirmation").textContent = resultat.message;
+                        document.getElementById("confirmation").hidden = false;
+                    }
+                } catch (error) {
+                    afficherErreur(error);
+                } finally {
+                    // Réactiver les contrôles même si la requête échoue.
+                    controles.forEach((element, index) => element.disabled = etats[index]);
+                    occupe = false;
+                }
+            }
+
+            // Ajouter un choix dans une liste déroulante.
+            function option(liste, valeur, texte) {
+                const element = document.createElement("option");
+                element.value = valeur;
+                element.textContent = texte;
+                liste.appendChild(element);
+            }
+
+            // Créer un bouton et lui associer la fonction à exécuter au clic.
+            function bouton(parent, texte, action) {
+                const element = document.createElement("button");
+                element.type = "button";
+                element.textContent = texte;
+                element.onclick = action;
+                parent.appendChild(element);
+            }
+
+            // Afficher la section demandée et mettre son bouton en évidence.
+            function afficherOnglet(nom) {
+                ongletActuel = nom;
+                ["Messages", "Contacts", "Dossiers", "Profil"].forEach(onglet => {
+                    document.getElementById("zone" + onglet).hidden = onglet !== nom;
+                    document.getElementById("bouton" + onglet).classList.toggle("actif", onglet === nom);
+                });
+                effacerMessages();
+                chargerOnglet().catch(afficherErreur);
+            }
+
+            // Charger uniquement les données de l'onglet ouvert.
+            async function chargerOnglet() {
+                if (ongletActuel === "Messages") await actualiserMessages();
+                if (ongletActuel === "Contacts") await chargerContacts();
+                if (ongletActuel === "Dossiers") await chargerDossiers();
+                if (ongletActuel === "Profil") await chargerProfil();
+            }
+
+            // Passer de la lecture à la rédaction dans le panneau de droite.
+            function afficherPanneau(nom) {
+                document.getElementById("panneauLecture").hidden = nom !== "Lecture";
+                document.getElementById("panneauRedaction").hidden = nom !== "Redaction";
+                document.getElementById("boutonLecture").classList.toggle("actif", nom === "Lecture");
+                document.getElementById("boutonRedaction").classList.toggle("actif", nom === "Redaction");
+            }
+
+            // 3. Choix de l’utilisateur et des destinataires
+            // Les destinataires sont les utilisateurs inscrits dans l’application.
+            async function chargerUtilisateurs() {
+                utilisateurs = await appelerAPI("/utilisateurs");
+                const liste = document.getElementById("utilisateur");
+                liste.innerHTML = "";
+                const destinataire = document.getElementById("destinataire");
+                const choix = destinataire.value;
+                destinataire.innerHTML = "";
+                option(destinataire, "", "Sélectionner un utilisateur");
+                utilisateurs.forEach(u => {
+                    const nom = u.prenom + " " + u.nom;
+                    option(liste, u.id_utilisateur, nom);
+                    option(destinataire, u.id_utilisateur, nom);
+                });
+                liste.value = utilisateur;
+                destinataire.value = choix;
+            }
+
+            // Vider les anciennes données avant de charger la boîte du nouvel utilisateur.
+            async function changerUtilisateur() {
+                utilisateur = Number(document.getElementById("utilisateur").value);
+                // Une réponse commencée avant ce changement ne doit plus remplir l’écran.
+                revisionUtilisateur++;
+                effacerMessages();
+                document.getElementById("filtreDossier").innerHTML = "";
+                document.getElementById("listeMessages").innerHTML = "";
+                document.getElementById("listeContacts").innerHTML = "";
+                document.getElementById("listeDossiers").innerHTML = "";
+                document.getElementById("formProfil").reset();
+                dossiers = [];
+                messages = [];
+                effacerLecture();
+                nouveauMessage();
+                viderContact();
+                viderDossier();
+                afficherPanneau("Lecture");
+                try {
+                    await chargerOnglet();
+                } catch (error) {
+                    afficherErreur(error);
+                }
+            }
+
+            // 4. Chargement des dossiers
+            // Cette liste sert au filtre des messages et à l’onglet Dossiers.
+            async function chargerDossiers() {
+                const revision = revisionUtilisateur;
+                const resultat = await appelerAPI("/dossiers");
+                if (revision !== revisionUtilisateur) return;
+                dossiers = resultat;
+                const filtre = document.getElementById("filtreDossier");
+                const choix = filtre.value;
+                filtre.innerHTML = "";
+                const liste = document.getElementById("listeDossiers");
+                liste.innerHTML = "";
+                dossiers.forEach(d => {
+                    option(filtre, d.id_dossier, d.nom_dossier + " (" + d.nombre_messages + ")");
+                    const ligne = document.createElement("div");
+                    ligne.className = "dossier";
+                    const entete = document.createElement("div");
+                    entete.className = "ligne";
+                    const nom = document.createElement("strong");
+                    nom.textContent = d.nom_dossier;
+                    const compteur = document.createElement("span");
+                    compteur.className = "compteur";
+                    compteur.textContent = d.nombre_messages;
+                    entete.append(nom, compteur); // Le compteur reste à droite du nom.
+                    const commentaire = document.createElement("p");
+                    commentaire.textContent = d.type_dossier ? "Dossier système" : (d.commentaire || "Dossier personnel");
+                    ligne.append(entete, commentaire);
+                    if (!d.type_dossier) {
+                        const actions = document.createElement("div");
+                        actions.className = "actions";
+                        bouton(actions, "Modifier", () => editerDossier(d));
+                        bouton(actions, "Supprimer", () => supprimerDossier(d));
+                        ligne.appendChild(actions);
+                    }
+                    liste.appendChild(ligne);
+                });
+                if (dossiers.some(d => String(d.id_dossier) === choix)) filtre.value = choix;
+                else if (dossiers.length) filtre.value = dossiers[0].id_dossier;
+            }
+
+            // 5. Liste, lecture et rédaction des messages
+            // Retirer le message sélectionné et réafficher le texte d'attente.
+            function effacerLecture() {
+                messageSelectionne = null;
+                document.getElementById("lecture").hidden = true;
+                document.getElementById("lectureVide").hidden = false;
+            }
+
+            // Recharger les dossiers avant les messages pour mettre aussi les compteurs à jour.
+            async function actualiserMessages() {
+                await chargerDossiers();
+                await chargerMessages();
+            }
+
+            // Recharger la liste lorsque le dossier sélectionné change.
+            async function changerDossier() {
+                effacerMessages();
+                try {
+                    await chargerMessages();
+                } catch (error) {
+                    afficherErreur(error);
+                }
+            }
+
+            // Construire une ligne du tableau pour chaque message du dossier choisi.
+            async function chargerMessages() {
+                effacerLecture();
+                const idDossier = document.getElementById("filtreDossier").value;
+                if (!idDossier) return;
+                const revision = revisionUtilisateur;
+                const resultat = await appelerAPI("/messages?dossier=" + idDossier);
+                // Éviter d'afficher un ancien filtre si l'utilisateur a déjà changé de dossier.
+                if (revision !== revisionUtilisateur || document.getElementById("filtreDossier").value !== idDossier) return;
+                messages = resultat;
+                const tableau = document.getElementById("listeMessages");
+                tableau.innerHTML = "";
+                document.getElementById("aucunMessage").hidden = messages.length !== 0;
+                document.getElementById("nombreAffiche").textContent =
+                    messages.length + " message(s)" + (messages.length > 8 ? " · Faites défiler pour voir la suite." : "");
+                messages.forEach(m => {
+                    const ligne = document.createElement("tr");
+                    if (!m.est_lu && m.statut !== "brouillon") ligne.className = "non-lu";
+                    const valeurs = [
+                        m.role_message === "expediteur" ? (m.destinataire || "Sans destinataire") : m.expediteur,
+                        m.objet || "(Sans objet)",
+                        m.date_heure ? new Date(m.date_heure).toLocaleString("fr-CA") : "",
+                        m.statut === "brouillon" ? "Brouillon" : m.est_lu ? "Lu" : "Non lu"
+                    ];
+                    valeurs.forEach(valeur => {
+                        const cellule = document.createElement("td");
+                        const texte = document.createElement("span");
+                        texte.className = "texte-cellule";
+                        texte.textContent = valeur;
+                        texte.title = valeur;
+                        cellule.appendChild(texte);
+                        ligne.appendChild(cellule);
+                    });
+                    const action = document.createElement("td");
+                    bouton(action, "Lire", () => lireMessage(m.id_message_utilisateur));
+                    ligne.appendChild(action);
+                    tableau.appendChild(ligne);
+                });
+                document.getElementById("defilementMessages").scrollTop = 0;
+            }
+
+            // Afficher le détail du message et le marquer comme lu si nécessaire.
+            async function lireMessage(id) {
+                const m = messages.find(element => element.id_message_utilisateur === id);
+                if (!m) return;
+                const revision = revisionUtilisateur;
+                try {
+                    if (!m.est_lu && m.statut !== "brouillon" && m.type_dossier !== "supprime") {
+                        await appelerAPI("/messages/" + id, json("PATCH", { action: "lu" }));
+                        if (revision !== revisionUtilisateur) return;
+                        m.est_lu = true;
+                        const index = messages.indexOf(m);
+                        document.getElementById("listeMessages").children[index].classList.remove("non-lu");
+                        document.getElementById("listeMessages").children[index].children[3].firstChild.textContent = "Lu";
+                    }
+                    messageSelectionne = m;
+                    afficherPanneau("Lecture");
+                    document.getElementById("lectureVide").hidden = true;
+                    document.getElementById("lecture").hidden = false;
+                    document.getElementById("lectureObjet").textContent = m.objet || "(Sans objet)";
+                    document.getElementById("lectureInfos").textContent =
+                        "De : " + m.expediteur + " — À : " + (m.destinataire || "Non choisi") +
+                        " · " + new Date(m.date_heure).toLocaleString("fr-CA");
+                    document.getElementById("lectureContenu").textContent = m.contenu;
+                    document.getElementById("lectureContenu").scrollTop = 0;
+                    preparerActions(m);
+                } catch (error) {
+                    afficherErreur(error);
+                }
+            }
+
+            // Adapter les boutons au message : brouillon, message courant ou message supprimé.
+            function preparerActions(m) {
+                const actions = document.getElementById("actionsMessage");
+                actions.innerHTML = "";
+                const deplacement = document.getElementById("zoneDeplacement");
+                deplacement.hidden = true;
+                if (m.type_dossier === "supprime") {
+                    bouton(actions, "Restaurer", () => actionMessage("restaurer"));
+                    return;
+                }
+                if (m.statut === "brouillon") {
+                    bouton(actions, "Reprendre le brouillon", () => reprendreBrouillon(m));
+                } else {
+                    bouton(actions, m.est_lu ? "Marquer comme non lu" : "Marquer comme lu",
+                        () => actionMessage(m.est_lu ? "non_lu" : "lu"));
+                    if (m.type_dossier !== "archive") bouton(actions, "Archiver", () => actionMessage("archiver"));
+                    const liste = document.getElementById("dossierDestination");
+                    liste.innerHTML = "";
+                    // Proposer les dossiers compatibles avec le rôle de ce message.
+                    const origine = m.role_message === "expediteur" ? "envoye" : "recu";
+                    dossiers.filter(d => d.id_dossier !== m.id_dossier &&
+                        (!d.type_dossier || d.type_dossier === origine || d.type_dossier === "archive"))
+                        .forEach(d => option(liste, d.id_dossier, d.nom_dossier));
+                    deplacement.hidden = liste.options.length === 0;
+                }
+                bouton(actions, "Supprimer", () => actionMessage("supprimer"));
+            }
+
+            // Envoyer l'action choisie au serveur, puis actualiser la liste.
+            async function actionMessage(action, destination) {
+                if (!messageSelectionne) return;
+                if (action === "supprimer" && !confirm("Déplacer ce message dans Messages supprimés ?")) return;
+                const id = messageSelectionne.id_message_utilisateur;
+                await modifierDonnees(async () => {
+                    const resultat = await appelerAPI("/messages/" + id, json("PATCH", { action: action, id_dossier: destination }));
+                    await actualiserMessages();
+                    return resultat;
+                });
+            }
+
+            // Utiliser le dossier choisi dans la liste comme destination.
+            function deplacerMessage() {
+                actionMessage("deplacer", document.getElementById("dossierDestination").value);
+            }
+
+            // Réinitialiser le formulaire pour commencer un autre message.
+            function nouveauMessage() {
+                brouillonId = null;
+                document.getElementById("formMessage").reset();
+                document.getElementById("titreRedaction").textContent = "Nouveau message";
+                afficherPanneau("Redaction");
+            }
+
+            // Remplir le formulaire avec le brouillon et garder son identifiant pour le modifier.
+            function reprendreBrouillon(m) {
+                brouillonId = m.id_message_utilisateur;
+                document.getElementById("objet").value = m.objet || "";
+                document.getElementById("contenu").value = m.contenu || "";
+                document.getElementById("destinataire").value = m.id_destinataire || "";
+                document.getElementById("titreRedaction").textContent = "Modifier le brouillon";
+                afficherPanneau("Redaction");
+            }
+
+            // Le même formulaire sert à envoyer un message ou à enregistrer un brouillon.
+            async function enregistrerMessage(event, action) {
+                event.preventDefault();
+                const donnees = {
+                    action: action,
+                    objet: document.getElementById("objet").value.trim(),
+                    contenu: document.getElementById("contenu").value.trim(),
+                    id_destinataire: document.getElementById("destinataire").value || null
+                };
+                // L’envoi demande un objet, un contenu et un destinataire.
+                // Un brouillon peut être incomplet, mais doit contenir un objet ou du texte.
+                if (action === "envoyer" && (!donnees.objet || !donnees.contenu || !donnees.id_destinataire)) return;
+                if (action === "brouillon" && !donnees.objet && !donnees.contenu) return;
+                await modifierDonnees(async () => {
+                    // Avec un identifiant, mettre à jour le brouillon au lieu d’en créer un autre.
+                    const route = brouillonId ? "/messages/" + brouillonId + "/brouillon" : "/messages";
+                    const resultat = await appelerAPI(route, json(brouillonId ? "PUT" : "POST", donnees));
+                    nouveauMessage(); // Vider seulement après la réussite.
+                    await chargerDossiers();
+                    const cible = dossiers.find(d => d.type_dossier === (action === "envoyer" ? "envoye" : "brouillon"));
+                    document.getElementById("filtreDossier").value = cible.id_dossier;
+                    await chargerMessages();
+                    afficherPanneau("Lecture");
+                    return resultat;
+                });
+            }
+
+            // 6. Carnet de contacts
+            // Chaque contact possède un numéro de téléphone et un type de numéro.
+            async function chargerContacts() {
+                const revision = revisionUtilisateur;
+                const contacts = await appelerAPI("/contacts");
+                if (revision !== revisionUtilisateur) return;
+                const liste = document.getElementById("listeContacts");
+                liste.innerHTML = "";
+                if (!contacts.length) liste.textContent = "Aucun contact.";
+                contacts.forEach(c => {
+                    const carte = document.createElement("div");
+                    carte.className = "contact";
+                    const image = document.createElement("img");
+                    image.src = "/images/" + encodeURIComponent(c.photo_profil || "profil.svg");
+                    image.alt = "Photo de " + c.prenom;
+                    // Si la photo est absente, utiliser l’image par défaut sans relancer onerror.
+                    image.onerror = function () {
+                        this.onerror = null;
+                        this.src = "/images/profil.svg";
+                    };
+                    const texte = document.createElement("div");
+                    texte.className = "contact-texte";
+                    const nom = document.createElement("strong");
+                    nom.textContent = c.prenom + " " + c.nom;
+                    const details = document.createElement("p");
+                    details.textContent = c.courriel + " — " + c.telephone + " (" + c.type_telephone + ")";
+                    const actions = document.createElement("div");
+                    actions.className = "actions";
+                    bouton(actions, "Modifier", () => editerContact(c));
+                    bouton(actions, "Supprimer", () => supprimerContact(c));
+                    texte.append(nom, details, actions);
+                    carte.append(image, texte);
+                    liste.appendChild(carte);
+                });
+            }
+
+            // Revenir au formulaire vide après un ajout ou une annulation.
+            function viderContact() {
+                contactId = null;
+                document.getElementById("formContact").reset();
+                document.getElementById("titreContact").textContent = "Ajouter un contact";
+            }
+
+            // Garder son identifiant et remplir les champs avec les informations du contact.
+            function editerContact(c) {
+                contactId = c.id_contact;
+                document.getElementById("titreContact").textContent = "Modifier le contact";
+                document.getElementById("nom").value = c.nom;
+                document.getElementById("prenom").value = c.prenom;
+                document.getElementById("courriel").value = c.courriel;
+                document.getElementById("photo").value = c.photo_profil || "";
+                document.getElementById("telephone").value = c.telephone;
+                document.getElementById("typeTelephone").value = c.type_telephone;
+            }
+
+            // Créer un contact si aucun identifiant n’est sélectionné, sinon modifier le contact existant.
+            async function enregistrerContact(event) {
+                event.preventDefault();
+                const c = {
+                    nom: document.getElementById("nom").value.trim(),
+                    prenom: document.getElementById("prenom").value.trim(),
+                    courriel: document.getElementById("courriel").value.trim(),
+                    photo_profil: document.getElementById("photo").value.trim(),
+                    telephone: document.getElementById("telephone").value.trim(),
+                    type_telephone: document.getElementById("typeTelephone").value
+                };
+                if (!c.nom || !c.prenom || !c.courriel || !c.telephone) return;
+                await modifierDonnees(async () => {
+                    const resultat = await appelerAPI("/contacts" + (contactId ? "/" + contactId : ""), json(contactId ? "PUT" : "POST", c));
+                    viderContact();
+                    await chargerContacts();
+                    return resultat;
+                });
+            }
+
+            // Demander confirmation avant de retirer le contact du carnet.
+            async function supprimerContact(c) {
+                if (!confirm("Supprimer " + c.prenom + " " + c.nom + " du carnet ?")) return;
+                await modifierDonnees(async () => {
+                    const resultat = await appelerAPI("/contacts/" + c.id_contact, { method: "DELETE" });
+                    viderContact();
+                    await chargerContacts();
+                    return resultat;
+                });
+            }
+
+            // 7. Formulaire des dossiers personnels
+            // Les dossiers système ne sont pas modifiables depuis ce formulaire.
+            // Effacer la sélection pour revenir à la création d’un dossier.
+            function viderDossier() {
+                dossierId = null;
+                document.getElementById("formDossier").reset();
+                document.getElementById("titreDossier").textContent = "Créer un dossier";
+            }
+
+            // Charger les informations du dossier personnel dans le formulaire.
+            function editerDossier(d) {
+                dossierId = d.id_dossier;
+                document.getElementById("titreDossier").textContent = "Modifier le dossier";
+                document.getElementById("nomDossier").value = d.nom_dossier;
+                document.getElementById("commentaire").value = d.commentaire || "";
+            }
+
+            // Utiliser POST pour créer un dossier et PUT pour modifier le dossier sélectionné.
+            async function enregistrerDossier(event) {
+                event.preventDefault();
+                const nom = document.getElementById("nomDossier").value.trim();
+                if (!nom) return;
+                await modifierDonnees(async () => {
+                    const resultat = await appelerAPI("/dossiers" + (dossierId ? "/" + dossierId : ""), json(dossierId ? "PUT" : "POST", {
+                        nom_dossier: nom, commentaire: document.getElementById("commentaire").value.trim()
+                    }));
+                    viderDossier();
+                    await chargerDossiers();
+                    return resultat;
+                });
+            }
+
+            // Le serveur vérifie aussi que le dossier peut être supprimé.
+            async function supprimerDossier(d) {
+                if (!confirm("Supprimer le dossier " + d.nom_dossier + " ?")) return;
+                await modifierDonnees(async () => {
+                    const resultat = await appelerAPI("/dossiers/" + d.id_dossier, { method: "DELETE" });
+                    viderDossier();
+                    await chargerDossiers();
+                    return resultat;
+                });
+            }
+
+            // 8. Profil de l’utilisateur
+            // Remplir le formulaire avec les informations de l’utilisateur actuel.
+            async function chargerProfil() {
+                const revision = revisionUtilisateur;
+                const p = await appelerAPI("/profil");
+                if (revision !== revisionUtilisateur) return;
+                document.getElementById("profilNom").value = p.nom;
+                document.getElementById("profilPrenom").value = p.prenom;
+                document.getElementById("profilCourriel").value = p.courriel;
+                document.getElementById("profilPhoto").value = p.photo_profil || "";
+            }
+
+            // Enregistrer le profil, puis actualiser les noms dans les listes d’utilisateurs.
+            async function enregistrerProfil(event) {
+                event.preventDefault();
+                const p = {
+                    nom: document.getElementById("profilNom").value.trim(),
+                    prenom: document.getElementById("profilPrenom").value.trim(),
+                    courriel: document.getElementById("profilCourriel").value.trim(),
+                    photo_profil: document.getElementById("profilPhoto").value.trim()
+                };
+                if (!p.nom || !p.prenom || !p.courriel) return;
+                await modifierDonnees(async () => {
+                    const resultat = await appelerAPI("/profil", json("PUT", p));
+                    await chargerUtilisateurs();
+                    return resultat;
+                });
+            }
+
+            // 9. Démarrage de la page
+            // Charger les utilisateurs, puis afficher les messages du premier utilisateur.
+            async function demarrer() {
+                try {
+                    await chargerUtilisateurs();
+                    if (utilisateurs.length) {
+                        utilisateur = utilisateurs[0].id_utilisateur;
+                        document.getElementById("utilisateur").value = utilisateur;
+                        await actualiserMessages();
+                    }
+                } catch (error) {
+                    afficherErreur(error);
+                }
+            }
+
+            demarrer();
+        </script>
+    </body>
+</html>
